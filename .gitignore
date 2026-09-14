@@ -26,3 +26,5 @@ public/build/manifest.json
 public/build/assets/*
 .idea
 .idea/CRM.iml
+rr
+.rr.yaml

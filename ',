@@ -1,0 +1,122 @@
+[33mcommit 92bd1f3627ca4859a6c1450504ef6f2c951e5100[m
+Author: curtisdelicata <bot@liberu.software>
+Date:   Mon Aug 31 21:27:07 2026 +0000
+
+    feat: modularize application domains and CRM theme
+
+[1mdiff --git a/app/Providers/Filament/AdminPanelProvider.php b/app/Providers/Filament/AdminPanelProvider.php[m
+[1mindex 92f7984d..e2075102 100755[m
+[1m--- a/app/Providers/Filament/AdminPanelProvider.php[m
+[1m+++ b/app/Providers/Filament/AdminPanelProvider.php[m
+[36m@@ -37,7 +37,7 @@[m [mclass AdminPanelProvider extends PanelProvider[m
+ {[m
+     public function panel(Panel $panel): Panel[m
+     {[m
+[31m-        return $panel[m
+[32m+[m[32m        $panel = $panel[m
+             ->id('admin')[m
+             ->path('admin')[m
+             ->login()[m
+[36m@@ -49,8 +49,6 @@[m [mpublic function panel(Panel $panel): Panel[m
+                 'Team',[m
+                 'Settings',[m
+             ])[m
+[31m-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')[m
+[31m-            ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')[m
+             ->tenantMenu(fn (): bool => Filament::getTenant() !== null)[m
+             ->resources([[m
+                 TeamBackupResource::class,[m
+[36m@@ -65,8 +63,6 @@[m [mpublic function panel(Panel $panel): Panel[m
+                 ReportCustomizer::registerRoutes($panel);[m
+                 ManageGeneralSettings::registerRoutes($panel);[m
+             })[m
+[31m-            ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')[m
+[31m-            ->discoverWidgets(in: app_path('Filament/Admin/Widgets/Home'), for: 'App\\Filament\\Admin\\Widgets\\Home')[m
+             ->tenant(Team::class, ownershipRelationship: 'team')[m
+             ->navigation(fn (): bool => Filament::getTenant() !== null)[m
+             ->pages([[m
+[36m@@ -97,6 +93,20 @@[m [mpublic function panel(Panel $panel): Panel[m
+                     ->navigationGroup('Administration'),[m
+                 SettingsFilamentPlugin::make(),[m
+             ]);[m
+[32m+[m
+[32m+[m[32m        foreach (glob(base_path('modules/*/src/Legacy/Filament/Resources')) ?: [] as $path) {[m
+[32m+[m[32m            $panel->discoverResources(in: $path, for: 'App\\Filament\\Resources');[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        foreach (glob(base_path('modules/*/src/Legacy/Filament/Admin/Resources')) ?: [] as $path) {[m
+[32m+[m[32m            $panel->discoverResources(in: $path, for: 'App\\Filament\\Admin\\Resources');[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        foreach (glob(base_path('modules/*/src/Legacy/Filament/Admin/Pages')) ?: [] as $path) {[m
+[32m+[m[32m            $panel->discoverPages(in: $path, for: 'App\\Filament\\Admin\\Pages');[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        return $panel;[m
+     }[m
+ [m
+     public function boot(): void[m
+[1mdiff --git a/app/Providers/Filament/AppPanelProvider.php b/app/Providers/Filament/AppPanelProvider.php[m
+[1mindex 487b4b21..c4e440ef 100755[m
+[1m--- a/app/Providers/Filament/AppPanelProvider.php[m
+[1m+++ b/app/Providers/Filament/AppPanelProvider.php[m
+[36m@@ -69,13 +69,10 @@[m [mpublic function panel(Panel $panel): Panel[m
+                         ? url(EditProfile::getUrl())[m
+                         : url($panel->getPath())),[m
+             ])[m
+[31m-            ->discoverResources(in: app_path('Filament/App/Resources'), for: 'App\\Filament\\App\\Resources')[m
+[31m-            ->discoverPages(in: app_path('Filament/App/Pages'), for: 'App\\Filament\\App\\Pages')[m
+             ->pages([[m
+                 Dashboard::class,[m
+                 EditProfile::class,[m
+             ])[m
+[31m-            ->discoverWidgets(in: app_path('Filament/App/Widgets/Home'), for: 'App\\Filament\\App\\Widgets\\Home')[m
+             ->widgets([[m
+                 Widgets\AccountWidget::class,[m
+                 // Widgets\FilamentInfoWidget::class,[m
+[36m@@ -124,6 +121,14 @@[m [mpublic function panel(Panel $panel): Panel[m
+                 ]);[m
+         }[m
+ [m
+[32m+[m[32m        foreach (glob(base_path('modules/*/src/Legacy/Filament/App/Resources')) ?: [] as $path) {[m
+[32m+[m[32m            $panel->discoverResources(in: $path, for: 'App\\Filament\\App\\Resources');[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        foreach (glob(base_path('modules/*/src/Legacy/Filament/App/Pages')) ?: [] as $path) {[m
+[32m+[m[32m            $panel->discoverPages(in: $path, for: 'App\\Filament\\App\\Pages');[m
+[32m+[m[32m        }[m
+[32m+[m
+         return $panel;[m
+     }[m
+ [m
+[1mdiff --git a/modules/settings/src/Legacy/Support/ThemeColors.php b/modules/settings/src/Legacy/Support/ThemeColors.php[m
+[1mnew file mode 100644[m
+[1mindex 00000000..b4aea9db[m
+[1m--- /dev/null[m
+[1m+++ b/modules/settings/src/Legacy/Support/ThemeColors.php[m
+[36m@@ -0,0 +1,25 @@[m
+[32m+[m[32m<?php[m
+[32m+[m
+[32m+[m[32mnamespace App\Support;[m
+[32m+[m
+[32m+[m[32muse Filament\Support\Colors\Color;[m
+[32m+[m[32muse Liberu\Foundation\Theme\Services\ThemeManager;[m
+[32m+[m
+[32m+[m[32mfinal class ThemeColors[m
+[32m+[m[32m{[m
+[32m+[m[32m    public function __construct(private readonly ThemeManager $themes) {}[m
+[32m+[m
+[32m+[m[32m    public function forSite(): array[m
+[32m+[m[32m    {[m
+[32m+[m[32m        $colors = [[m
+[32m+[m[32m            'slate' => Color::Slate, 'gray' => Color::Gray, 'zinc' => Color::Zinc, 'neutral' => Color::Neutral,[m
+[32m+[m[32m            'stone' => Color::Stone, 'red' => Color::Red, 'orange' => Color::Orange, 'amber' => Color::Amber,[m
+[32m+[m[32m            'yellow' => Color::Yellow, 'lime' => Color::Lime, 'green' => Color::Green, 'emerald' => Color::Emerald,[m
+[32m+[m[32m            'teal' => Color::Teal, 'cyan' => Color::Cyan, 'sky' => Color::Sky, 'blue' => Color::Blue,[m
+[32m+[m[32m            'indigo' => Color::Indigo, 'violet' => Color::Violet, 'purple' => Color::Purple,[m
+[32m+[m[32m            'fuchsia' => Color::Fuchsia, 'pink' => Color::Pink, 'rose' => Color::Rose,[m
+[32m+[m[32m        ];[m
+[32m+[m
+[32m+[m[32m        return ['primary' => $colors[$this->themes->primaryColor($this->themes->getSiteTheme())] ?? Color::Amber];[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
