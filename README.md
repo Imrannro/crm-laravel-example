@@ -65,7 +65,7 @@ Configure the database and application services in `.env`, then run:
 php artisan migrate --seed
 npm install
 npm run build
-php artisan serve
+php artisan octane:start
 ```
 
 The application is available at `http://localhost:8000`. Use `php artisan storage:link` when serving uploaded files locally.
